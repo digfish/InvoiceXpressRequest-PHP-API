@@ -1,7 +1,7 @@
 {
     "name": "digfish/invoicexpressrequest-php-api",
     "version": "1.1",
-    "description": "A short description of what your package does",
+    "description": "PHP client implementation of InvoiceXpress API",
     "license" : "MIT",
     "autoload": {
 				    "classmap":  [
