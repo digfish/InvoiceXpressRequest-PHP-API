@@ -398,16 +398,12 @@ class InvoiceXpressRequest {
         curl_setopt($ch, CURLOPT_URL, $url); // set url to post to
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return into a variable
         curl_setopt($ch, CURLOPT_TIMEOUT, 40); // times out after 40s
-//        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ch, CURLOPT_VERBOSE, $this->_debug);
         
-//        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE );
-        //curl_setopt($ch, CURLOPT_SSLCERT, "cacert.pem");
-        //curl_setopt($ch, CURLOPT_SSLCERTTYPE, 'PEM');
         
         
         
-        var_dump($this->_http_method);
+       
         
         
         
