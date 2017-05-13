@@ -61,7 +61,18 @@ class InvoiceXpressRequest {
      */
     protected $_response = array();
     protected $_debug = FALSE;
+    
+    /**
+     * holds the query string, url-encoded with the args
+     * @var string 
+     */
+    protected $_query_str = '';
 
+    /**
+     * 
+     */
+    protected $_http_method = 'GET';
+    
     /*
      * Initialize the and store the domain/token for making requests
      *
@@ -97,8 +108,18 @@ class InvoiceXpressRequest {
      */
 
     public function post($data) {
-        $this->_args = $data;
+        list($entity,$method) = explode(".", $this->_method);
+        $this->setRequiredArgs($entity, $method);
+        $default_args = $this->_args;
+        $this->_args = array_merge($default_args,$data);
+        $this->_query_str = http_build_query($this->_args);
     }
+    
+    
+    public function set_args($data) {
+        $this->post($data);
+    }
+    
 
     /*
      * Determine whether or not it was successful
@@ -154,6 +175,36 @@ class InvoiceXpressRequest {
 
         return $post_data;
     }
+    
+    /**
+     * this function is called initally on post to properly initialize
+     * the required parameters with their default values
+     * @param type $entity
+     * @param type $method
+     */
+    private function setRequiredArgs($entity,$method) {
+        $required_args = array();
+       if ($entity === 'invoices') {
+           if ($method === 'list') {
+               $required_args = array(
+                   'non_archived' => 'true',
+                   'type' => array(
+                       'Invoice',
+                       'InvoiceReceipt',
+                       'SimplifiedInvoice'
+                   ),
+                   'status' => array(
+                       'draft',
+                       'sent',
+                       'settled',
+                       'canceled',
+                       'second_copy'
+                   )
+               );
+           }
+       } 
+       $this->_args = $required_args;
+    }
 
     /**
      * invoiceMethods
@@ -173,15 +224,18 @@ class InvoiceXpressRequest {
         switch ($class[1]) {
             case 'create':
                 curl_setopt($ch, CURLOPT_POST, 1);
+                $this->_http_method = 'POST';
                 $url = str_replace('{{ CLASS }}', $class[0], $url);
                 break;
             case 'list':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
                 $url = str_replace('{{ CLASS }}', $class[0], $url);
+                
                 break;
             case 'change-state':
             case 'email-invoice':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+                $this->_http_method = 'PUT';
                 $url = str_replace('{{ CLASS }}', $class[0] . "/" . $id . "/" . $class[1], $url);
                 break;
             case 'get':
@@ -189,6 +243,7 @@ class InvoiceXpressRequest {
                 $url = str_replace('{{ CLASS }}', $class[0] . "/" . $id, $url);
                 break;
             case 'update':
+                $this->_http_method = 'PUT';
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
                 $url = str_replace('{{ CLASS }}', $class[0] . "/" . $id, $url);
                 break;
@@ -246,7 +301,7 @@ class InvoiceXpressRequest {
             case 'update':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
                 $url = str_replace('{{ CLASS }}', "clients/" . $id, $url);
-
+                $this->_http_method = 'PUT';
                 break;
             case 'invoices':
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
@@ -322,11 +377,19 @@ class InvoiceXpressRequest {
                 echo ("The methods for the {$class[0]} were not implemented yet!");
                 break;
         }
+        
+        if ($this->_http_method == 'GET' || $this->_http_method == 'PUT') {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST,$this->_http_method);
+        } else if ($this->_http_method == 'POST') {
+            curl_setopt($ch, CURLOPT_POST, 1);
+        }
 
 
-
+        $this->setRequiredArgs($class[0],$class[1] );
 
         $url .= "?api_key=" . self::$_token;
+        
+        $url .= "&" . $this->_query_str;
 
 
         if ($this->_debug) {
@@ -335,14 +398,22 @@ class InvoiceXpressRequest {
         curl_setopt($ch, CURLOPT_URL, $url); // set url to post to
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return into a variable
         curl_setopt($ch, CURLOPT_TIMEOUT, 40); // times out after 40s
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+//        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ch, CURLOPT_VERBOSE, $this->_debug);
-        //curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, TRUE );
+        
+//        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE );
         //curl_setopt($ch, CURLOPT_SSLCERT, "cacert.pem");
         //curl_setopt($ch, CURLOPT_SSLCERTTYPE, 'PEM');
-
-        if ($class[1] != "get")
+        
+        
+        
+        var_dump($this->_http_method);
+        
+        
+        
+        if ($this->_http_method != 'GET')
             curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data); // add POST fields
+        
         curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/xml; charset=utf-8"));
 
         $result = curl_exec($ch);
@@ -358,6 +429,8 @@ class InvoiceXpressRequest {
 
         // if weird simplexml error then you may have the a user with
         // a user_meta wc_ie_client_id defined that not exists in InvoiceXpress
+        
+        var_dump($result);
         if ($result && $result != " ") {
             $res = print_r($result, true);
             if ($this->_debug) {
