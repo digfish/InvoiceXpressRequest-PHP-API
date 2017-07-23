@@ -3,9 +3,9 @@
 //include_once('XmlDomConstruct.php');
 /**
  * A simple PHP API wrapper for the InvoiceXpress API.
- * All post vars can be found on the developer site: http://en.invoicexpress.com/api/
+ * All post vars can be found on the developer site: https://invoicexpress.com/api/overview
  * Stay up to date on Github: https://github.com/nunomorgadinho/InvoiceXpressRequest-PHP-API
- *
+ * Slight modifications and corrections by Samuel Viana
  * PHP version 5
  *
  * @author     original by Nuno Morgadinho <nuno@widgilabs.com>
@@ -348,10 +348,17 @@ class InvoiceXpressRequest {
         if (!self::$_domain || !self::$_token) {
             throw new InvoiceXpressRequestException('You need to call InvoiceXpressRequest::init($domain, $token) with your domain and token.');
         }
-
-        $post_data = $this->getGeneratedXML();
-        $p = print_r($post_data, true);
-        //echo("post = " . $p . "\n");
+        
+        $post_data = NULL;
+        
+        if ($this->_http_method != 'GET') {
+            $post_data = $this->getGeneratedXML();
+            
+            if ($this->_debug) {
+                $p = print_r($post_data, true);
+                echo("post = " . $p . "\n");
+            }
+        }
 
         $url = str_replace('{{ DOMAIN }}', self::$_domain, $this->_api_url);
 
