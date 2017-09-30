@@ -1,4 +1,6 @@
-InvoiceXpressRequest-PHP-API
+**Please note:** For the new InvoiceXpress API 2.0, there is a new client available at [digfish/ivx-api2-php](https://github.com/digfish/ivx-api2-php) .
+
+## InvoiceXpressRequest-PHP-API
 
 A simple PHP wrapper for making requests with the InvoiceXpress API
 
